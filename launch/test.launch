@@ -1,0 +1,8 @@
+<launch>
+	<node name="ar_kinect" pkg="ar_kinect" type="ar_kinect" respawn="false" output="screen">
+        <remap from="points" to="/camera/depth_registered/points"/>
+		<param name="marker_pattern_list" type="string" value="$(find ar_kinect)/data/objects_kinect"/>
+		<param name="marker_data_directory" type="string" value="$(find ar_pose)"/>
+		<param name="threshold" type="int" value="100"/>
+	</node>
+</launch>
