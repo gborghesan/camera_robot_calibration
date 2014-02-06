@@ -1,0 +1,17 @@
+<package>
+  <description brief="camera_robot_calibration">
+
+     camera_robot_calibration
+
+  </description>
+  <author>apertuscus</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/camera_robot_calibration</url>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+  <depend package="tf"/>
+  <depend package="std_msgs"/>
+</package>
+
+
