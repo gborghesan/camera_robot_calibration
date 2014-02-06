@@ -57,18 +57,21 @@ class camera_robot_calibration():
     def __init__(self):
         #read values from properties
         self.base_frame_name=rospy.get_param('base_frame_name', '/base_link')
-        self.camera_frame_name=rospy.get_param('camera_frame_name', '/camera_frame')
-        self.robot_ee_frame_name=rospy.get_param('robot_ee_frame_name', '/ee_frame')
+        self.camera_frame_name=rospy.get_param('camera_frame_name', '/camera_link')
+        self.robot_ee_frame_name=rospy.get_param('robot_ee_frame_name', '/lwr_arm_link_7')
         self.target_frame_name=rospy.get_param('target_frame_name', '/marker_frame')
-        
+       
+
         #nominal positions of camera w.r.t world and marker mounted in the robot
         #this two frames are published
         unity_frame=Pose()
-        unity_frame.orientation.w=1;
-        # camera base in world
-        self.w_P_c=rospy.get_param('nominal_pose_camera', unity_frame);
-        # marker in ee
+        unity_frame.orientation.w=1; 
+	    # marker in ee
         self.ee_P_m=rospy.get_param('robot_ee_pose_camera', unity_frame);
+        # camera base in world
+        unity_frame.position.z=0.5
+        self.w_P_c=rospy.get_param('nominal_pose_camera', unity_frame);
+        
         
         #setup TF LISTENER AND BROADCASTER
         self.br = tf.TransformBroadcaster()
@@ -120,8 +123,8 @@ class camera_robot_calibration():
         self.br.sendTransform((self.ee_P_m.position.x,self.ee_P_m.position.y,self.ee_P_m.position.z),  
                          (self.ee_P_m.orientation.w,self.ee_P_m.orientation.x,self.ee_P_m.orientation.y,self.ee_P_m.orientation.z),
                          rospy.Time.now(),
-                         self.robot_ee_frame_name,
-                         self.base_frame_name)
+                         self.base_frame_name,
+                         self.target_frame_name+"_nominal")
     
         
     def compute_frames(self):
@@ -165,6 +168,6 @@ if __name__ == '__main__':
     
     while not rospy.is_shutdown():
       est.publish_tfs()
-      rospy.sleep(1.0)
+      rospy.sleep(0.01)
 
     rospy.spin()

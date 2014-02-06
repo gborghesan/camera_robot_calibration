@@ -35,9 +35,9 @@ class camera_robot_calibration():
     def __init__(self):
 
         # camera base in world
-        self._w_T_c=PyKDL.Frame.Identity()
+        self.w_T_c=PyKDL.Frame.Identity()
         # marker in ee
-        self._ee_T_m=PyKDL.Frame.Identity()
+        self.ee_T_m=PyKDL.Frame.Identity()
         #vectors of saved data (kdl frames)
         self._w_T_ee=[]
         self._c_T_m=[]
@@ -50,15 +50,15 @@ class camera_robot_calibration():
         self._c_T_m.append(c_T_m)
     def set_intial_frames(self,w_T_c,ee_T_m):
         #marker w.r.t. camera
-        self._w_T_c=w_T_c        # marker in ee
-        self._ee_T_m=ee_T_m
+        self.w_T_c=w_T_c        # marker in ee
+        self.ee_T_m=ee_T_m
         
     def compute_frames(self,r_eq=1):
             #compute the big matrix
             self.Atot=None
             self.Btot=None
             for i in range(len(self._w_T_ee)):
-               [Asub,Bsub]=create_A_B(self._w_T_ee[i],self._ee_T_m,self._w_T_c,self._c_T_m[i])
+               [Asub,Bsub]=create_A_B(self._w_T_ee[i],self.ee_T_m,self.w_T_c,self._c_T_m[i])
                if self.Atot is None:
                    self.Atot=Asub
                    self.Btot=Bsub
@@ -77,12 +77,12 @@ class camera_robot_calibration():
             
             Delta_m=PyKDL.Frame(PyKDL.Rotation.Identity(),PyKDL.Vector(x[0],x[1],x[2]))
               
-            self._ee_T_m=self._ee_T_m*Delta_m;
+            self.ee_T_m=self.ee_T_m*Delta_m;
             
             Delta_c=PyKDL.Frame(PyKDL.Rotation.RPY(x[3],x[4],x[5]),
                 PyKDL.Vector(x[6],x[7],x[8]))
             
-            self._w_T_c=self._w_T_c*Delta_c;
+            self.w_T_c=self.w_T_c*Delta_c;
 
             #compute the residue
             return self.Atot*x-self.Btot
@@ -140,10 +140,10 @@ if __name__ == '__main__':
 
             
     
-    print 'error _w_T_c'
-    print (w_TR_c.Inverse()*crc._w_T_c)
-    print 'error _ee_T_m.p'
-    print (ee_TR_m.p-crc._ee_T_m.p)    
+    print 'error w_T_c'
+    print (w_TR_c.Inverse()*crc.w_T_c)
+    print 'error ee_T_m.p'
+    print (ee_TR_m.p-crc.ee_T_m.p)    
     print 'residue, maxes for iterations'
     print residue_max
     import matplotlib.pyplot as plt
