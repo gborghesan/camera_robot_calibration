@@ -98,13 +98,13 @@ class camera_robot_calibration_ros():
             
             #do several iteration of estimation
 
-            n_comp=3
+            n_comp=6
             residue_max=[]
             residue_mod=[]
             for i in range(n_comp):
                 print '\ncurrent position'
                 print self.crc.w_T_c.p
-                residue= self.crc.compute_frames(1);
+                residue= self.crc.compute_frames();
                 r2=residue.transpose()*residue
                 residue_mod.append( num.sqrt (r2[0,0]))
                 residue_max.append(num.max(residue))

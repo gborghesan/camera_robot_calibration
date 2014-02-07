@@ -1,20 +1,33 @@
 #!/usr/bin/env python  
 
 import numpy as num
-
-
+from geometry_msgs.msg import Pose, Point, Quaternion
+from tf_conversions import posemath
 
 import PyKDL
 
-def load_pose_from_file(f,P):
-    f.write(str(P.position.x)+'\t')
-    f.write(str(P.position.y)+'\t')
-    f.write(str(P.position.z)+'\t')
-    f.write(str(P.orientation.x)+'\t')
-    f.write(str(P.orientation.y)+'\t')
-    f.write(str(P.orientation.z)+'\t')
-    f.write(str(P.orientation.w)+'\n')
-    f.flush()
+def load_pose_from_file(fname):
+    with open(fname) as f:
+        x, y, z, xx, yy, zz, ww =[float(x) for x in f.readline().split()]
+        w_T_c_in=posemath.fromMsg(Pose(Point(x,y,z),Quaternion(xx,yy,zz,ww)))
+        x, y, z, xx, yy, zz, ww =[float(x) for x in f.readline().split()]
+        ee_T_m_in=posemath.fromMsg(Pose(Point(x,y,z),Quaternion(xx,yy,zz,ww)))
+        array = []
+        for line in f: # read rest of lines
+            x, y, z, xx, yy, zz, ww =[float(x) for x in line.split()]
+            array.append(posemath.fromMsg(Pose(Point(x,y,z),Quaternion(xx,yy,zz,ww))))
+
+        w_T_ee_vec=[]
+        c_T_m_vec=[]
+        for i in range(0,len(array),2):
+
+            w_T_ee_vec.append(array[i])
+            c_T_m_vec.append(array[i+1])
+        return (w_T_c_in,ee_T_m_in,w_T_ee_vec,c_T_m_vec)
+        
+            
+    
+
 
 def create_A_B(w_T_ee, ee_T_mn,w_T_cn,cr_T_mr):
 #inputs: poses of the ee
@@ -104,56 +117,67 @@ if __name__ == '__main__':
     
     #self test: it needs some functions that simulate the measurements,
     # like a generator of random ee poses
-    from random import random
     import matplotlib.pyplot as plt
-    
-    def random_pose(angle_range=num.pi/4, pos_range=0.5):
-        return PyKDL.Frame(PyKDL.Rotation.RPY(angle_range*random(),angle_range*random(),angle_range*random()),
-                PyKDL.Vector(pos_range*random(),pos_range*random(),pos_range*random()))
-    
-    #define real poses of camera and marker
-    w_TR_c=random_pose(num.pi/2,0.5)
-    ee_TR_m=random_pose(num.pi/2,0.5)
-    #w_TR_c=PyKDL.Frame.Identity();
-    #ee_TR_m=PyKDL.Frame.Identity();
-    
+    random_poses =False
     crc=camera_robot_calibration()
-    #generate some positions of the robot, and make some camera measurements
-    for i in range(10):
-        #generate robot position
-        w_T_ee=random_pose()
-        #measure the frame of the marker w.r.t. the camera, plus some noise 
-        #(noise on angle is not necessary as only marker position is used)
-        c_T_m=w_TR_c.Inverse()*w_T_ee*ee_TR_m*random_pose(0,0.01)
+    if (random_poses):
+        from random import random
+    
+        def random_pose(angle_range=num.pi/4, pos_range=0.5):
+            return PyKDL.Frame(PyKDL.Rotation.RPY(angle_range*random(),angle_range*random(),angle_range*random()),
+                               PyKDL.Vector(pos_range*random(),pos_range*random(),pos_range*random()))
+    
+        #define real poses of camera and marker
+        w_TR_c=random_pose(num.pi/2,0.5)
+        ee_TR_m=random_pose(num.pi/2,0.5)
+        #w_TR_c=PyKDL.Frame.Identity();
+        #ee_TR_m=PyKDL.Frame.Identity();
+        
+        
+    
+       
+        #generate some positions of the robot, and make some camera measurements
+        w_T_ee_vec=[]
+        c_T_m_vec=[]
+        w_P_c_in=Pose();
+        ee_P_m_in=Pose();
+        for i in range(10):
+
+            #generate robot position
+            w_T_ee_vec.append(random_pose())
+            #measure the frame of the marker w.r.t. the camera, plus some noise 
+            #(noise on angle is not necessary as only marker position is used)
+            c_T_m_vec.append(w_TR_c.Inverse()*w_T_ee*ee_TR_m*random_pose(0,0.01))
+
+    else:
+            #load data from a file
+           (w_T_c_in,ee_T_m_in,w_T_ee_vec,c_T_m_vec)=load_pose_from_file('data1.txt')
+            
         #store the frames...
-        crc.store_frames(w_T_ee,c_T_m)
+    crc.set_intial_frames(w_T_c_in,ee_T_m_in)
+    for i in range(0,len(w_T_ee_vec)):
+  
+        crc.store_frames(w_T_ee_vec[i],c_T_m_vec[i])
     
     residue_max=[]
     residue_mod=[]
     #residue_all=None
     #x_bar=None
     #y_bar=None
-    n_comp=6
+    n_comp=10
     for i in range(n_comp):
+        print crc.w_T_c.p
         residue=crc.compute_frames();
         r2=residue.transpose()*residue
         residue_mod.append( num.sqrt (r2[0,0]))
         residue_max.append(num.max(residue))
-   #     if residue_all==None:
-    #        residue_all=residue.transpose()
-     #       x_bar=num.matrix(range(9))
-      #      y_bar=num.matrix([i for x in range(9)])
-      #  else:
-      #      residue_all=num.hstack([residue_all,residue.transpose()])
-      #      x_bar=num.hstack([x_bar,num.matrix(range(9))])
-      #      y_bar=num.hstack([y_bar,num.matrix([i for x in range(9)])])
-
+  
             
-    
-    print 'error w_T_c'
-    print (w_TR_c.Inverse()*crc.w_T_c)
-    print 'error ee_T_m.p'
-    print (ee_TR_m.p-crc.ee_T_m.p)    
+    if random_poses:
+        print 'error w_T_c'
+        print (w_TR_c.Inverse()*crc.w_T_c)
+        print 'error ee_T_m.p'
+        print (ee_TR_m.p-crc.ee_T_m.p)    
     print 'residue, maxes for iterations'
     print residue_max
     import matplotlib.pyplot as plt
@@ -166,6 +190,7 @@ if __name__ == '__main__':
   #  ax=Axes3D(fig)
     plt.xlabel('iteration #')
     plt.grid() 
+    print ('camera pose:'+str(crc.w_T_c))
     plt.show()
     
             
