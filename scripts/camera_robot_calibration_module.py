@@ -6,6 +6,16 @@ import numpy as num
 
 import PyKDL
 
+def load_pose_from_file(f,P):
+    f.write(str(P.position.x)+'\t')
+    f.write(str(P.position.y)+'\t')
+    f.write(str(P.position.z)+'\t')
+    f.write(str(P.orientation.x)+'\t')
+    f.write(str(P.orientation.y)+'\t')
+    f.write(str(P.orientation.z)+'\t')
+    f.write(str(P.orientation.w)+'\n')
+    f.flush()
+
 def create_A_B(w_T_ee, ee_T_mn,w_T_cn,cr_T_mr):
 #inputs: poses of the ee
 #        poses marker nominal w.r.t to ee
