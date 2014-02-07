@@ -89,6 +89,9 @@ class camera_robot_calibration_ros():
             print "Service call failed: %s" % e
             return 0
         
+        
+        
+        
     def compute_frames(self,req):
             #read nominal poses, and set as initial positions
     
