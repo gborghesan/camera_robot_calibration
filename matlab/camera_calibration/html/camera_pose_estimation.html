@@ -1,0 +1,530 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Proof of concept camera calibration</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-11-04"><meta name="DC.source" content="camera_pose_estimation.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>Proof of concept camera calibration</h1><!--introduction--><p>I consider to have a robot that of which i can control the end effector pose, <img src="camera_pose_estimation_eq18936.png" alt="$_wT^{ee}$">, and a camera that can measure a marker attached to the robot, returing <img src="camera_pose_estimation_eq27318.png" alt="$_{cr}T^{mr}$">, its pose w.r.t. the camera frame. Camera  and marker pose are not completely known.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Frames that compose the kinematic loop</a></li><li><a href="#4">Generate Measurements</a></li><li><a href="#5">plots of frames (you can comment this if gives problem)</a></li><li><a href="#6">Estimation procedure:</a></li><li><a href="#7">Iterative estimation</a></li><li><a href="#8">the x vector must go toward zero in all components</a></li></ul></div><h2>Frames that compose the kinematic loop<a name="1"></a></h2><p>loop to marker passing by the robot</p><div><ul><li><img src="camera_pose_estimation_eq18936.png" alt="$_wT^{ee}$">: Robot position (known, measured/controlled),</li></ul></div><div><ul><li><img src="camera_pose_estimation_eq19014.png" alt="$_{ee}T^{mn}$">: Nominal pose of the marker w.r.t. ee (known,fixed),</li></ul></div><div><ul><li><img src="camera_pose_estimation_eq00828.png" alt="$_{mn}T^{mr}$">: correction between nominal and real marker pose (unknown).</li></ul></div><p>Loop to marker passing by the camera</p><div><ul><li><img src="camera_pose_estimation_eq82437.png" alt="$_wT^{cn}$">: nominal position of the camera (known,fixed),</li></ul></div><div><ul><li><img src="camera_pose_estimation_eq14569.png" alt="$_{cn}T^{cr}$">:  correction between nominal and real camera pose (unknown),</li></ul></div><div><ul><li><img src="camera_pose_estimation_eq27318.png" alt="$_{cr}T^{mr}$">: measurement of the camera, (known, measured)</li></ul></div><p>In the picture is represented the kinematic loop, with named frames, and unknowns marked with a quastion mark!</p><p><img vspace="5" hspace="5" src="foto.JPG" alt=""> </p><h2>Generate Measurements<a name="4"></a></h2><p>here we will set all the parameters, and generate the robot posess, as well as the measurements of the camera, affected by 'noise_ang'</p><pre class="codeinput"><span class="comment">% control parameters</span>
+n_robot_pos=6;
+n_iteration=20;
+noise_ang=0; <span class="comment">% angular measurement are not used, this noise is not influential</span>
+noise_pos=0.01;
+generate_new=true;
+<span class="comment">% prescaling for a weight in the output space in order to compare rotation</span>
+<span class="comment">% error and linear error, a weight matrix can be introduced.</span>
+<span class="comment">% Set approx as the distance btw the camera and its target</span>
+r_eq=2;<span class="comment">% meters!</span>
+<span class="comment">% set nominal positions</span>
+ee_Ti_mn=[rpy2r([0,0,0]),[0,0,0.1]';[0 0 0 1]];
+ee_T_mn=ee_Ti_mn;
+w_Ti_cn=[rpy2r([0,0,pi]),[0,2,0.5]';[0 0 0 1]];
+w_T_cn=w_Ti_cn;
+<span class="comment">% set unknown errors in poses of camera and markers,(that will be setimated)</span>
+<span class="keyword">if</span>(generate_new)
+    mn_Tr_mr=random_pose(90*pi/180,0.4);
+    cn_Tr_cr=random_pose(90*pi/180,0.4);
+    <span class="comment">% generate some robot positions</span>
+
+    <span class="keyword">for</span> i=1:n_robot_pos
+        w_T_ee(:,:,i)=random_pose(pi\4,1);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+
+<span class="comment">% laslty, generate measurements with optional noise</span>
+
+<span class="keyword">for</span> i=1:n_robot_pos
+    w_T_mr=w_T_ee(:,:,i)*ee_T_mn*mn_Tr_mr;
+    w_T_cr=w_T_cn*cn_Tr_cr;
+    cr_T_mr(:,:,i)=camera_measurement(w_T_mr,w_T_cr,noise_ang, noise_pos);
+<span class="keyword">end</span>
+</pre><h2>plots of frames (you can comment this if gives problem)<a name="5"></a></h2><pre class="codeinput">figure (1)
+title(<span class="string">'positions of markers and camera'</span>)
+
+trplot(eye(4),<span class="string">'frame'</span>,<span class="string">'world'</span>,<span class="string">'arrow'</span>,<span class="string">'color'</span>,<span class="string">'k'</span>,<span class="string">'length'</span>,0.4);
+hold <span class="string">on</span>;
+trplot(w_T_cn,<span class="string">'frame'</span>,<span class="string">'cn'</span>,<span class="string">'length'</span>,0.4,<span class="string">'arrow'</span>);
+trplot(w_T_cn*cn_Tr_cr,<span class="string">'frame'</span>,<span class="string">'cr'</span>,<span class="string">'color'</span>,<span class="string">'k'</span>,<span class="string">'length'</span>,0.4,<span class="string">'arrow'</span>);
+<span class="keyword">for</span> i=1:n_robot_pos
+    trplot(w_T_ee(:,:,i)*ee_T_mn,<span class="keyword">...</span>
+        <span class="string">'frame'</span>,[<span class="string">'mn'</span>,num2str(i)],<span class="string">'arrow'</span>,<span class="string">'length'</span>,0.4);
+    trplot(w_T_ee(:,:,i)*ee_T_mn*mn_Tr_mr,<span class="keyword">...</span>
+        <span class="string">'frame'</span>,[<span class="string">'mr'</span>,num2str(i)],<span class="string">'color'</span>,<span class="string">'r'</span>,<span class="string">'arrow'</span>,<span class="string">'length'</span>,0.4);
+<span class="keyword">end</span>
+grid <span class="string">on</span>
+view([-129,12])
+hold <span class="string">off</span>
+</pre><img vspace="5" hspace="5" src="camera_pose_estimation_01.png" alt=""> <h2>Estimation procedure:<a name="6"></a></h2><p>I compute the position (only!) of the marker using the two brances of the kinematic loop:</p><div><ul><li><img src="camera_pose_estimation_eq97203.png" alt="$_wp1^{mr}=_wp^{mn}+_wR^{mn}\cdot_{mn}p^{mr}$"> and so <img src="camera_pose_estimation_eq12080.png" alt="$_wp1^{mr}(x)=_wp^{mn}+_wR^{mn}\cdot_{mn}p^{mr}$"></li></ul></div><div><ul><li><img src="camera_pose_estimation_eq75620.png" alt="$_wp2^{mr}=_wp^{cn}+_wR^{cn}\cdot_{cn}p^{cr}+_wR^{cn}\cdot_{cn}R^{cr}\cdot_{cr}p^{mr}$"></li></ul></div><p>We have 9 unknowns:</p><div><ul><li><img src="camera_pose_estimation_eq17652.png" alt="$_{mn}p^{mr}$"> -&gt;pmx pmy pmz</li></ul></div><div><ul><li><img src="camera_pose_estimation_eq35925.png" alt="$_{cn}R^{cr}$"> -&gt;acx acy acz</li></ul></div><div><ul><li><img src="camera_pose_estimation_eq61242.png" alt="$_{cn}p^{cr}$"> -&gt;pcx pcy pcz</li></ul></div><p>by not including orientation in the loop closure, we discard orientation measuremnts (very noisy!) from the camera, and orientation error estimation of the marker w.r.t. the robot ee, that is not interesting because the marker is probably removed after this camera calibration procedure.</p><pre class="codeinput">syms <span class="string">pmx</span> <span class="string">pmy</span> <span class="string">pmz</span> <span class="string">acx</span> <span class="string">acy</span> <span class="string">acz</span> <span class="string">pcx</span> <span class="string">pcy</span> <span class="string">pcz</span> <span class="string">real</span>
+
+
+mn_p_mr=[pmx pmy pmz]';
+<span class="comment">% note the infinitesimal rotation hypotesis!!</span>
+cn_R_cr=[   1,      -acz,   acy;
+    acz,    1,      -acx;
+    -acy,   acx,    1];
+cn_p_cr=[pcx pcy pcz]';
+
+<span class="comment">% known quantities also declared as symbolic</span>
+w_p_mn = sym(<span class="string">'w_p_mn_%d_%d'</span>, [3 1]);
+w_R_mn = sym(<span class="string">'w_R_mn_%d_%d'</span>, [3 3]);
+
+
+w_p_cn = sym(<span class="string">'w_p_cn_%d_%d'</span>, [3 1]);
+w_R_cn = sym(<span class="string">'w_R_cn_%d_%d'</span>, [3 3]);
+cr_p_mr = sym(<span class="string">'cr_p_mr_%d_%d'</span>, [3 1]);
+
+<span class="comment">%first branch</span>
+p1=w_p_mn+w_R_mn*mn_p_mr;
+<span class="comment">%second branch</span>
+p2=w_p_cn+w_R_cn*cn_p_cr+w_R_cn*cn_R_cr*cr_p_mr;
+
+<span class="comment">%loop closoure equation</span>
+l=p2-p1;
+<span class="comment">%regroup coefficents</span>
+[C1 T1]=coeffs(l(1), [pmx pmy pmz acx acy acz pcx pcy pcz ]);
+[C2 T2]=coeffs(l(2), [pmx pmy pmz acx acy acz pcx pcy pcz ]);
+[C3 T3]=coeffs(l(3), [pmx pmy pmz acx acy acz pcx pcy pcz ]);
+
+<span class="comment">%build the matrix following the order given in T</span>
+A=[C1(1:9);C2(1:9);C3(1:9)]
+<span class="comment">%and the know terms (the minus because i bring on the other side!)</span>
+B=-[C1(10);C2(10);C3(10)]
+
+<span class="comment">% now, we have to find the vector T so that AT=B</span>
+</pre><pre class="codeoutput"> 
+A =
+ 
+[ -w_R_mn_1_1, -w_R_mn_1_2, -w_R_mn_1_3, cr_p_mr_2_1*w_R_cn_1_3 - cr_p_mr_3_1*w_R_cn_1_2, cr_p_mr_3_1*w_R_cn_1_1 - cr_p_mr_1_1*w_R_cn_1_3, cr_p_mr_1_1*w_R_cn_1_2 - cr_p_mr_2_1*w_R_cn_1_1, w_R_cn_1_1, w_R_cn_1_2, w_R_cn_1_3]
+[ -w_R_mn_2_1, -w_R_mn_2_2, -w_R_mn_2_3, cr_p_mr_2_1*w_R_cn_2_3 - cr_p_mr_3_1*w_R_cn_2_2, cr_p_mr_3_1*w_R_cn_2_1 - cr_p_mr_1_1*w_R_cn_2_3, cr_p_mr_1_1*w_R_cn_2_2 - cr_p_mr_2_1*w_R_cn_2_1, w_R_cn_2_1, w_R_cn_2_2, w_R_cn_2_3]
+[ -w_R_mn_3_1, -w_R_mn_3_2, -w_R_mn_3_3, cr_p_mr_2_1*w_R_cn_3_3 - cr_p_mr_3_1*w_R_cn_3_2, cr_p_mr_3_1*w_R_cn_3_1 - cr_p_mr_1_1*w_R_cn_3_3, cr_p_mr_1_1*w_R_cn_3_2 - cr_p_mr_2_1*w_R_cn_3_1, w_R_cn_3_1, w_R_cn_3_2, w_R_cn_3_3]
+ 
+ 
+B =
+ 
+ w_p_mn_1_1 - w_p_cn_1_1 - cr_p_mr_1_1*w_R_cn_1_1 - cr_p_mr_2_1*w_R_cn_1_2 - cr_p_mr_3_1*w_R_cn_1_3
+ w_p_mn_2_1 - w_p_cn_2_1 - cr_p_mr_1_1*w_R_cn_2_1 - cr_p_mr_2_1*w_R_cn_2_2 - cr_p_mr_3_1*w_R_cn_2_3
+ w_p_mn_3_1 - w_p_cn_3_1 - cr_p_mr_1_1*w_R_cn_3_1 - cr_p_mr_2_1*w_R_cn_3_2 - cr_p_mr_3_1*w_R_cn_3_3
+ 
+</pre><h2>Iterative estimation<a name="7"></a></h2><p>We iterate with the same input data, but updating the nominal values we try to bring the unknown paramter toward zero. this is useful because the matrix cn_R_cr is build infinitesimal rotations hypotesis.</p><pre class="codeinput">iter=0;
+maxres=[];
+error=[];
+correction=[];
+<span class="comment">%Compute intial error</span>
+<span class="comment">% the nominal values where ee_Ti_mn and w_Ti_cn;</span>
+Dm=inv(ee_T_mn)*ee_Ti_mn*mn_Tr_mr;
+Dc=inv(w_T_cn)*w_Ti_cn*cn_Tr_cr;
+error=[error,[Dm(1:3,4);tr2rpy(Dc(1:3,1:3))';Dc(1:3,4)]];
+<span class="keyword">while</span>(iter&lt;n_iteration)
+    <span class="comment">% Building up the big matrix to invert</span>
+    Atot=[];
+    Btot=[];
+
+
+
+    <span class="comment">%at first substitute constant values in the symbolic expression</span>
+
+    A1=subs(A,w_p_cn,w_T_cn(1:3,4));
+    A2=subs(A1,w_R_cn,w_T_cn(1:3,1:3));
+    B1=subs(B,w_p_cn,w_T_cn(1:3,4));
+    B2=subs(B1,w_R_cn,w_T_cn(1:3,1:3));
+
+
+
+    <span class="keyword">for</span> i=1:n_robot_pos
+        <span class="comment">% marker nominal pose</span>
+        w_T_mn=w_T_ee(:,:,i)*ee_T_mn;
+        A3=subs(A2, w_p_mn , w_T_mn(1:3,4));
+        A4=subs(A3, w_R_mn , w_T_mn(1:3,1:3));
+        B3=subs(B2, w_p_mn , w_T_mn(1:3,4));
+        B4=subs(B3, w_R_mn , w_T_mn(1:3,1:3));
+
+        <span class="comment">%camera measurements</span>
+
+        A5=subs(A4, cr_p_mr , cr_T_mr(1:3,4,i));
+        B5=subs(B4, cr_p_mr , cr_T_mr(1:3,4,i));
+        <span class="comment">%insert in global matrices</span>
+        Atot=[Atot;double(A5)];
+        Btot=[Btot;double(B5)];
+    <span class="keyword">end</span>
+
+    <span class="comment">% pseudoinverse, weighted in the output soace to normalise angles and distances</span>
+
+    Wy=diag([ones(1,3),r_eq*ones(1,3),ones(1,3)]);
+    x=pinv(Atot*Wy)*Btot;
+    <span class="comment">% x is  [pmx pmy pmz acx acy acz pcx pcy pcz ]</span>
+    residue=Atot*x-Btot;
+    maxres=[maxres,max(abs(residue))];
+
+
+    correction=[correction,x];
+
+
+    <span class="comment">% I correct the nominal values</span>
+    ee_T_mn=ee_T_mn*[eye(3),x(1:3);[0 0 0 1]];
+    w_T_cn=w_T_cn*[rpy2r(x(4:6)'),x(7:9);[0 0 0 1]];
+    <span class="comment">% the nominal values where ee_Ti_mn and w_Ti_cn;</span>
+
+    Dm=inv(ee_T_mn)*ee_Ti_mn*mn_Tr_mr;
+    Dc=inv(w_T_cn)*w_Ti_cn*cn_Tr_cr;
+    error=[error,[Dm(1:3,4);tr2rpy(Dc(1:3,1:3))';Dc(1:3,4)]];
+    iter=iter+1;
+<span class="keyword">end</span>
+</pre><h2>the x vector must go toward zero in all components<a name="8"></a></h2><pre class="codeinput">figure (2)
+bar3(error);
+title(<span class="string">'Error btw estimated and ground truth'</span>)
+view (30,30);
+xlabel(<span class="string">'#trial'</span>)
+set(gca,<span class="string">'YTickLabel'</span>, {<span class="string">'pmx'</span> <span class="string">'pmy'</span> <span class="string">'pmz'</span> <span class="string">'acx'</span> <span class="string">'acy'</span> <span class="string">'acz'</span> <span class="string">'pcx'</span> <span class="string">'pcy'</span> <span class="string">'pcz'</span>})
+ch = get(gca,<span class="string">'child'</span>);
+set(ch,<span class="string">'facea'</span>,.3);
+
+figure (3)
+bar3(correction);
+title(<span class="string">'Correction term applied after n-iteration'</span>)
+view (30,30);
+xlabel(<span class="string">'#trial'</span>)
+set(gca,<span class="string">'YTickLabel'</span>, {<span class="string">'pmx'</span> <span class="string">'pmy'</span> <span class="string">'pmz'</span> <span class="string">'acx'</span> <span class="string">'acy'</span> <span class="string">'acz'</span> <span class="string">'pcx'</span> <span class="string">'pcy'</span> <span class="string">'pcz'</span>})
+ch = get(gca,<span class="string">'child'</span>);
+set(ch,<span class="string">'facea'</span>,.3);
+
+figure (4)
+ set(gcf,<span class="string">'Position'</span>,[1,1,60*n_iteration+1,301]);
+bar(maxres), grid <span class="string">on</span>;
+title(<span class="string">'Max residue at each iteration'</span>)
+ylabel (<span class="string">'x,y,z max error over all the measurements) [m]'</span>)
+xlabel(<span class="string">'#trial'</span>)
+<span class="comment">%add value above the bar</span>
+text([1:length(maxres)]',maxres',num2str(maxres',<span class="string">'%0.4f'</span>),<span class="keyword">...</span>
+    <span class="string">'HorizontalAlignment'</span>,<span class="string">'center'</span>,<span class="keyword">...</span>
+    <span class="string">'VerticalAlignment'</span>,<span class="string">'bottom'</span>)
+xaxis([0,n_iteration+1])
+</pre><img vspace="5" hspace="5" src="camera_pose_estimation_02.png" alt=""> <img vspace="5" hspace="5" src="camera_pose_estimation_03.png" alt=""> <img vspace="5" hspace="5" src="camera_pose_estimation_04.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% Proof of concept camera calibration
+% I consider to have a robot that of which i can control the end effector
+% pose, $_wT^{ee}$, and a camera that can measure a marker attached to the
+% robot, returing $_{cr}T^{mr}$, its pose w.r.t. the camera frame.
+% Camera  and marker pose are not completely known.
+
+%% Frames that compose the kinematic loop
+% loop to marker passing by the robot
+%%
+%
+% * $_wT^{ee}$: Robot position (known, measured/controlled),
+%
+% * $_{ee}T^{mn}$: Nominal pose of the marker w.r.t. ee (known,fixed),
+%
+% * $_{mn}T^{mr}$: correction between nominal and real marker pose
+% (unknown).
+%
+% Loop to marker passing by the camera
+%
+% * $_wT^{cn}$: nominal position of the camera (known,fixed),
+%
+% * $_{cn}T^{cr}$:  correction between nominal and real camera
+% pose (unknown),
+%
+% * $_{cr}T^{mr}$: measurement of the camera, (known, measured)
+%
+%
+% In the picture is represented the kinematic loop, with named frames, and
+% unknowns marked with a quastion mark!
+%
+% 
+
+%%
+% 
+% <<foto.JPG>>
+% 
+
+
+
+%% Generate Measurements
+% here we will set all the parameters, and generate the robot posess, as
+% well as the measurements of the camera, affected by 'noise_ang'
+
+% control parameters
+n_robot_pos=6;
+n_iteration=20;
+noise_ang=0; % angular measurement are not used, this noise is not influential
+noise_pos=0.01;
+generate_new=true;
+% prescaling for a weight in the output space in order to compare rotation
+% error and linear error, a weight matrix can be introduced.
+% Set approx as the distance btw the camera and its target
+r_eq=2;% meters!
+% set nominal positions
+ee_Ti_mn=[rpy2r([0,0,0]),[0,0,0.1]';[0 0 0 1]];
+ee_T_mn=ee_Ti_mn;
+w_Ti_cn=[rpy2r([0,0,pi]),[0,2,0.5]';[0 0 0 1]];
+w_T_cn=w_Ti_cn;
+% set unknown errors in poses of camera and markers,(that will be setimated)
+if(generate_new)
+    mn_Tr_mr=random_pose(90*pi/180,0.4);
+    cn_Tr_cr=random_pose(90*pi/180,0.4);
+    % generate some robot positions
+    
+    for i=1:n_robot_pos
+        w_T_ee(:,:,i)=random_pose(pi\4,1);
+    end
+end
+
+
+% laslty, generate measurements with optional noise
+
+for i=1:n_robot_pos
+    w_T_mr=w_T_ee(:,:,i)*ee_T_mn*mn_Tr_mr;
+    w_T_cr=w_T_cn*cn_Tr_cr;
+    cr_T_mr(:,:,i)=camera_measurement(w_T_mr,w_T_cr,noise_ang, noise_pos);
+end
+
+
+%% plots of frames (you can comment this if gives problem)
+figure (1)
+title('positions of markers and camera')
+
+trplot(eye(4),'frame','world','arrow','color','k','length',0.4);
+hold on;
+trplot(w_T_cn,'frame','cn','length',0.4,'arrow');
+trplot(w_T_cn*cn_Tr_cr,'frame','cr','color','k','length',0.4,'arrow');
+for i=1:n_robot_pos
+    trplot(w_T_ee(:,:,i)*ee_T_mn,...
+        'frame',['mn',num2str(i)],'arrow','length',0.4);
+    trplot(w_T_ee(:,:,i)*ee_T_mn*mn_Tr_mr,...
+        'frame',['mr',num2str(i)],'color','r','arrow','length',0.4);
+end
+grid on
+view([-129,12])
+hold off
+
+
+%% Estimation procedure:
+%
+% I compute the position (only!) of the marker using the two brances of the
+% kinematic loop:
+%
+% * $_wp1^{mr}=_wp^{mn}+_wR^{mn}\cdot_{mn}p^{mr}$
+% and so
+% $_wp1^{mr}(x)=_wp^{mn}+_wR^{mn}\cdot_{mn}p^{mr}$
+%
+% * $_wp2^{mr}=_wp^{cn}+_wR^{cn}\cdot_{cn}p^{cr}+_wR^{cn}\cdot_{cn}R^{cr}\cdot_{cr}p^{mr}$
+%
+% We have 9 unknowns:
+%
+% * $_{mn}p^{mr}$ ->pmx pmy pmz
+%
+% * $_{cn}R^{cr}$ ->acx acy acz
+%
+% * $_{cn}p^{cr}$ ->pcx pcy pcz
+%
+% by not including orientation in the loop closure, we discard orientation
+% measuremnts (very noisy!) from the camera, and orientation error
+% estimation of the marker w.r.t. the robot ee, that is not interesting
+% because the marker is probably removed after this camera calibration
+% procedure.
+
+syms pmx pmy pmz acx acy acz pcx pcy pcz real
+
+
+mn_p_mr=[pmx pmy pmz]';
+% note the infinitesimal rotation hypotesis!!
+cn_R_cr=[   1,      -acz,   acy;
+    acz,    1,      -acx;
+    -acy,   acx,    1];
+cn_p_cr=[pcx pcy pcz]';
+
+% known quantities also declared as symbolic
+w_p_mn = sym('w_p_mn_%d_%d', [3 1]);
+w_R_mn = sym('w_R_mn_%d_%d', [3 3]);
+
+
+w_p_cn = sym('w_p_cn_%d_%d', [3 1]);
+w_R_cn = sym('w_R_cn_%d_%d', [3 3]);
+cr_p_mr = sym('cr_p_mr_%d_%d', [3 1]);
+
+%first branch
+p1=w_p_mn+w_R_mn*mn_p_mr;
+%second branch
+p2=w_p_cn+w_R_cn*cn_p_cr+w_R_cn*cn_R_cr*cr_p_mr;
+
+%loop closoure equation
+l=p2-p1;
+%regroup coefficents
+[C1 T1]=coeffs(l(1), [pmx pmy pmz acx acy acz pcx pcy pcz ]);
+[C2 T2]=coeffs(l(2), [pmx pmy pmz acx acy acz pcx pcy pcz ]);
+[C3 T3]=coeffs(l(3), [pmx pmy pmz acx acy acz pcx pcy pcz ]);
+
+%build the matrix following the order given in T
+A=[C1(1:9);C2(1:9);C3(1:9)]
+%and the know terms (the minus because i bring on the other side!)
+B=-[C1(10);C2(10);C3(10)]
+
+% now, we have to find the vector T so that AT=B
+
+
+
+%% Iterative estimation
+% We iterate with the same input data,
+% but updating the nominal values we try to bring the unknown paramter
+% toward zero.
+% this is useful because the matrix cn_R_cr is build infinitesimal
+% rotations hypotesis.
+iter=0;
+maxres=[];
+error=[];
+correction=[];
+%Compute intial error
+% the nominal values where ee_Ti_mn and w_Ti_cn;
+Dm=inv(ee_T_mn)*ee_Ti_mn*mn_Tr_mr;
+Dc=inv(w_T_cn)*w_Ti_cn*cn_Tr_cr;
+error=[error,[Dm(1:3,4);tr2rpy(Dc(1:3,1:3))';Dc(1:3,4)]];
+while(iter<n_iteration)
+    % Building up the big matrix to invert
+    Atot=[];
+    Btot=[];
+    
+    
+    
+    %at first substitute constant values in the symbolic expression
+    
+    A1=subs(A,w_p_cn,w_T_cn(1:3,4));
+    A2=subs(A1,w_R_cn,w_T_cn(1:3,1:3));
+    B1=subs(B,w_p_cn,w_T_cn(1:3,4));
+    B2=subs(B1,w_R_cn,w_T_cn(1:3,1:3));
+    
+    
+    
+    for i=1:n_robot_pos
+        % marker nominal pose
+        w_T_mn=w_T_ee(:,:,i)*ee_T_mn;
+        A3=subs(A2, w_p_mn , w_T_mn(1:3,4));
+        A4=subs(A3, w_R_mn , w_T_mn(1:3,1:3));
+        B3=subs(B2, w_p_mn , w_T_mn(1:3,4));
+        B4=subs(B3, w_R_mn , w_T_mn(1:3,1:3));
+        
+        %camera measurements
+        
+        A5=subs(A4, cr_p_mr , cr_T_mr(1:3,4,i));
+        B5=subs(B4, cr_p_mr , cr_T_mr(1:3,4,i));
+        %insert in global matrices
+        Atot=[Atot;double(A5)];
+        Btot=[Btot;double(B5)];
+    end
+    
+    % pseudoinverse, weighted in the output soace to normalise angles and distances
+    
+    Wy=diag([ones(1,3),r_eq*ones(1,3),ones(1,3)]);
+    x=pinv(Atot*Wy)*Btot;
+    % x is  [pmx pmy pmz acx acy acz pcx pcy pcz ]
+    residue=Atot*x-Btot;
+    maxres=[maxres,max(abs(residue))];
+    
+    
+    correction=[correction,x];
+    
+    
+    % I correct the nominal values
+    ee_T_mn=ee_T_mn*[eye(3),x(1:3);[0 0 0 1]];
+    w_T_cn=w_T_cn*[rpy2r(x(4:6)'),x(7:9);[0 0 0 1]];
+    % the nominal values where ee_Ti_mn and w_Ti_cn;
+    
+    Dm=inv(ee_T_mn)*ee_Ti_mn*mn_Tr_mr;
+    Dc=inv(w_T_cn)*w_Ti_cn*cn_Tr_cr;
+    error=[error,[Dm(1:3,4);tr2rpy(Dc(1:3,1:3))';Dc(1:3,4)]];
+    iter=iter+1;
+end
+
+%% the x vector must go toward zero in all components
+figure (2)
+bar3(error);
+title('Error btw estimated and ground truth')
+view (30,30);
+xlabel('#trial')
+set(gca,'YTickLabel', {'pmx' 'pmy' 'pmz' 'acx' 'acy' 'acz' 'pcx' 'pcy' 'pcz'})
+ch = get(gca,'child');
+set(ch,'facea',.3);
+
+figure (3)
+bar3(correction);
+title('Correction term applied after n-iteration')
+view (30,30);
+xlabel('#trial')
+set(gca,'YTickLabel', {'pmx' 'pmy' 'pmz' 'acx' 'acy' 'acz' 'pcx' 'pcy' 'pcz'})
+ch = get(gca,'child');
+set(ch,'facea',.3);
+
+figure (4)
+ set(gcf,'Position',[1,1,60*n_iteration+1,301]);
+bar(maxres), grid on;
+title('Max residue at each iteration')
+ylabel ('x,y,z max error over all the measurements) [m]')
+xlabel('#trial')
+%add value above the bar
+text([1:length(maxres)]',maxres',num2str(maxres','%0.4f'),...
+    'HorizontalAlignment','center',...
+    'VerticalAlignment','bottom')
+xaxis([0,n_iteration+1])
+
+##### SOURCE END #####
+--></body></html>
