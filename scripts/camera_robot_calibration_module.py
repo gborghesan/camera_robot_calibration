@@ -30,26 +30,30 @@ def load_pose_from_file(fname):
 
 
 def create_A_B(w_T_ee, ee_T_mn,w_T_cn,cr_T_mr):
-#inputs: poses of the ee
-#        poses marker nominal w.r.t to ee
-#        poses nominal of the camera
-#        poses measured by the camera of the marker
-
-
+    """
+    Generates the A and B sub-matrices  for the optimal problem, for each set of poses
+    
+    Parameters
+    ----------
+    w_T_ee : geometry_msgs.Pose
+        pose from the common frame 'w' to the link of the robot where the marker is fastened (end-effector), 
+        read from the robot
+    ee_T_mn : geometry_msgs.Pose
+        nominal pose from end-effector to marker reference.
+    w_T_cn : geometry_msgs.Pose
+        nominal pose from common frame 'w' to camera
+    cr_T_mr : geometry_msgs.Pose
+        pose from camera frame to marker, read from the marker identification (e.g. ar_pose)
+        
+    """
     w_T_mn=w_T_ee*ee_T_mn
- 
-#[                   A =
     A =num.matrix([[ -w_T_mn.M[0,0], -w_T_mn.M[0,1], -w_T_mn.M[0,2], cr_T_mr.p.y()*w_T_cn.M[0,2] - cr_T_mr.p.z()*w_T_cn.M[0,1], cr_T_mr.p.z()*w_T_cn.M[0,0] - cr_T_mr.p.x()*w_T_cn.M[0,2], cr_T_mr.p.x()*w_T_cn.M[0,1] - cr_T_mr.p.y()*w_T_cn.M[0,0], w_T_cn.M[0,0], w_T_cn.M[0,1], w_T_cn.M[0,2]],
                    [ -w_T_mn.M[1,0], -w_T_mn.M[1,1], -w_T_mn.M[1,2], cr_T_mr.p.y()*w_T_cn.M[1,2] - cr_T_mr.p.z()*w_T_cn.M[1,1], cr_T_mr.p.z()*w_T_cn.M[1,0] - cr_T_mr.p.x()*w_T_cn.M[1,2], cr_T_mr.p.x()*w_T_cn.M[1,1] - cr_T_mr.p.y()*w_T_cn.M[1,0], w_T_cn.M[1,0], w_T_cn.M[1,1], w_T_cn.M[1,2]],
                    [ -w_T_mn.M[2,0], -w_T_mn.M[2,1], -w_T_mn.M[2,2], cr_T_mr.p.y()*w_T_cn.M[2,2] - cr_T_mr.p.z()*w_T_cn.M[2,1], cr_T_mr.p.z()*w_T_cn.M[2,0] - cr_T_mr.p.x()*w_T_cn.M[2,2], cr_T_mr.p.x()*w_T_cn.M[2,1] - cr_T_mr.p.y()*w_T_cn.M[2,0], w_T_cn.M[2,0], w_T_cn.M[2,1], w_T_cn.M[2,2]]])
-    #print (A)
-             #       w_p_mn_1_1 -   w_p_cn_1_1 -    cr_p_mr_1_1 *w_R_cn_1_1    - cr_p_mr_2_1    *w_R_cn_1_2  - cr_p_mr_3_1   * w_R_cn_1_3
-#                    w_p_mn_2_1 -   w_p_cn_2_1 -    cr_p_mr_1_1 *w_R_cn_2_1    - cr_p_mr_2_1    *w_R_cn_2_2 -  cr_p_mr_3_1   * w_R_cn_2_3
- #                   w_p_mn_3_1 -   w_p_cn_3_1 -    cr_p_mr_1_1 *w_R_cn_3_1    - cr_p_mr_2_1    *w_R_cn_3_2  - cr_p_mr_3_1   * w_R_cn_3_3
+ 
     B =num.matrix([[ w_T_mn.p.x() - w_T_cn.p.x() - cr_T_mr.p.x()*w_T_cn.M[0,0] - cr_T_mr.p.y()*w_T_cn.M[0,1] - cr_T_mr.p.z()*w_T_cn.M[0,2]],
                    [ w_T_mn.p.y() - w_T_cn.p.y() - cr_T_mr.p.x()*w_T_cn.M[1,0] - cr_T_mr.p.y()*w_T_cn.M[1,1] - cr_T_mr.p.z()*w_T_cn.M[1,2]],
                    [ w_T_mn.p.z() - w_T_cn.p.z() - cr_T_mr.p.x()*w_T_cn.M[2,0] - cr_T_mr.p.y()*w_T_cn.M[2,1] - cr_T_mr.p.z()*w_T_cn.M[2,2]]])             
-    #print (B)
     return [A,B]
 
 
@@ -67,48 +71,91 @@ class camera_robot_calibration():
         
 
     def store_frames(self,w_T_ee,c_T_m):
-        #marker w.r.t. camera
-        
+        """ 
+        save frames read from camera and robot.
+        Parameters
+        ----------    
+        w_T_ee : geometry_msgs.Pose
+        pose from the common frame 'w' to the link of the robot where the marker is fastened (end-effector), 
+        read from the robot
+        c_T_m : geometry_msgs.Pose
+        pose from camera frame to marker, read from the marker identification (e.g. ar_pose)."""
+   
         self._w_T_ee.append(w_T_ee)
         self._c_T_m.append(c_T_m)
+        
+    def reset_frames(self):
+        """throw away saved measured frames till now"""
+        self._w_T_ee=[]
+        self._c_T_m=[]
+                
     def set_intial_frames(self,w_T_c,ee_T_m):
-        #marker w.r.t. camera
-        self.w_T_c=w_T_c        # marker in ee
+        """"
+        Set initial estimates
+        
+        Parameters
+        ----------
+        ee_T_m : geometry_msgs.Pose
+            nominal pose from end-effector to marker reference.
+        w_T_c : geometry_msgs.Pose
+            nominal pose from common frame 'w' to camera
+        cr_T_mr : geometry_msgs.Pose
+            pose from camera frame to marker, read from the marker identification (e.g. ar_pose)"""
+        
+        self.w_T_c=w_T_c        
+
         self.ee_T_m=ee_T_m
         
-    def compute_frames(self,r_eq=1):
+    def compute_frames(self,r_eq=1,w_marker=1):
+        """"
+        function that computes the frame of the camera (accessible as self.w_T_c) and
+        the position of the marker w.r.t. the robot end_effector (self.ee_T_m)
+        the inputs are normalizations factors to weight pseudo-inverse
+        
+        Parameters
+        ----------
+        r_eq : scalar
+            equivalent radius of camera orientation.
+            As rule of the thumb, you should choose this as more or less of the distance
+            btw the marker registered positions and the camera.
+        w_marker: scalar
+            weights given to the marker position.
+
+        """
             #compute the big matrix
-            self.Atot=None
-            self.Btot=None
-            for i in range(len(self._w_T_ee)):
-               [Asub,Bsub]=create_A_B(self._w_T_ee[i],self.ee_T_m,self.w_T_c,self._c_T_m[i])
-               if self.Atot is None:
-                   self.Atot=Asub
-                   self.Btot=Bsub
-               else:
-                   self.Atot=num.vstack([self.Atot, Asub])
-                   self.Btot=num.vstack([self.Btot, Bsub])
+        self.Atot=None
+        self.Btot=None
+        for i in range(len(self._w_T_ee)):
+            [Asub,Bsub]=create_A_B(self._w_T_ee[i],self.ee_T_m,self.w_T_c,self._c_T_m[i])
+            if self.Atot is None:
+                self.Atot=Asub
+                self.Btot=Bsub
+            else:
+                self.Atot=num.vstack([self.Atot, Asub])
+                self.Btot=num.vstack([self.Btot, Bsub])
+            
                 
             #matrix are built, compute the weighted pseudoinverse
             #converting rotation with a 1 meter scale
-            sc=1
-            W=num.matrix(num.diag(num.array([1,1,1,sc*r_eq,sc*r_eq,sc*r_eq,sc,sc,sc])))
+            
+            #the x is organized as follows:
+        W=num.matrix(num.diag(num.array([1,1,1,r_eq,r_eq,r_eq,w_marker,w_marker,w_marker])))
 
-            x=num.linalg.pinv(self.Atot*W)*self.Btot;
+        x=num.linalg.pinv(self.Atot*W)*self.Btot;
             
             #now i have to update the poses
             
-            Delta_m=PyKDL.Frame(PyKDL.Rotation.Identity(),PyKDL.Vector(x[0],x[1],x[2]))
+        Delta_m=PyKDL.Frame(PyKDL.Rotation.Identity(),PyKDL.Vector(x[0],x[1],x[2]))
               
-            self.ee_T_m=self.ee_T_m*Delta_m;
+        self.ee_T_m=self.ee_T_m*Delta_m;
             
-            Delta_c=PyKDL.Frame(PyKDL.Rotation.RPY(x[3],x[4],x[5]),
-                PyKDL.Vector(x[6],x[7],x[8]))
+        Delta_c=PyKDL.Frame(PyKDL.Rotation.RPY(x[3],x[4],x[5]),
+            PyKDL.Vector(x[6],x[7],x[8]))
             
-            self.w_T_c=self.w_T_c*Delta_c;
+        self.w_T_c=self.w_T_c*Delta_c;
 
             #compute the residue
-            return self.Atot*x-self.Btot
+        return self.Atot*x-self.Btot
 
             
             #
