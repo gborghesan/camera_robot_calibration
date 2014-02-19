@@ -161,12 +161,51 @@ class camera_robot_calibration():
             #
 
 if __name__ == '__main__':
+    def usage():
+        print "Usage: \n\tcamera_robot_calibration_module [-h][-i file_of_input][-p True/False]"
+    import sys, getopt
+
+    try:
+       opts, args = getopt.getopt(sys.argv[1:], "hi:p:", ["help", "inputfile=", "plotgraph="])
+       print opts
+    except getopt.GetoptError as err:
+        # print help information and exit:
+        print str(err) # will print something like "option -a not recognized"
+        usage()
+        sys.exit(2)
+        
+    plot_grap=True
+    inputfile=None
+
+    for o, a in (opts):
+        if o in("-i","--inputfile"):
+            inputfile = a
+        elif o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif o in ("-p", "--plotgraph"):
+            print a
+            if a=='True': 
+                plot_grap=True
+            elif a=='False': 
+                plot_grap=False
+            else:
+                usage()
+                sys.exit()
+        else:
+            assert False, "unhandled options"
+    
+
     
     #self test: it needs some functions that simulate the measurements,
     # like a generator of random ee poses
-    import matplotlib.pyplot as plt
-    random_poses =False
+
+    if inputfile==None:
+        random_poses =True
+    else:
+         random_poses =False
     crc=camera_robot_calibration()
+    
     if (random_poses):
         from random import random
     
@@ -175,35 +214,30 @@ if __name__ == '__main__':
                                PyKDL.Vector(pos_range*random(),pos_range*random(),pos_range*random()))
     
         #define real poses of camera and marker
-        w_TR_c=random_pose(num.pi/2,0.5)
-        ee_TR_m=random_pose(num.pi/2,0.5)
-        #w_TR_c=PyKDL.Frame.Identity();
-        #ee_TR_m=PyKDL.Frame.Identity();
-        
-        
-    
-       
+        w_TR_c=random_pose(num.pi/2,1)
+        ee_TR_m=random_pose(num.pi/2,0.1)
+
         #generate some positions of the robot, and make some camera measurements
         w_T_ee_vec=[]
         c_T_m_vec=[]
+        w_T_c_in=random_pose()
+        ee_T_m_in=random_pose()
         w_P_c_in=Pose();
         ee_P_m_in=Pose();
         for i in range(10):
-
             #generate robot position
-            w_T_ee_vec.append(random_pose())
+            w_T_ee=random_pose()
+            w_T_ee_vec.append(w_T_ee)
             #measure the frame of the marker w.r.t. the camera, plus some noise 
             #(noise on angle is not necessary as only marker position is used)
             c_T_m_vec.append(w_TR_c.Inverse()*w_T_ee*ee_TR_m*random_pose(0,0.01))
-
     else:
-            #load data from a file
-           (w_T_c_in,ee_T_m_in,w_T_ee_vec,c_T_m_vec)=load_pose_from_file('data1.txt')
+        #measurements form file are used
+        (w_T_c_in,ee_T_m_in,w_T_ee_vec,c_T_m_vec)=load_pose_from_file(inputfile)
             
         #store the frames...
     crc.set_intial_frames(w_T_c_in,ee_T_m_in)
     for i in range(0,len(w_T_ee_vec)):
-  
         crc.store_frames(w_T_ee_vec[i],c_T_m_vec[i])
     
     residue_max=[]
@@ -227,18 +261,14 @@ if __name__ == '__main__':
         print (ee_TR_m.p-crc.ee_T_m.p)    
     print 'residue, maxes for iterations'
     print residue_max
-    import matplotlib.pyplot as plt
+    if plot_grap==True:
+        import matplotlib.pyplot as plt
     
-    plt.plot(range(1,n_comp+1),residue_mod,'bo',range(1,n_comp+1),residue_mod,'k')
-    plt.xlim([0,n_comp+1])
-    plt.plot(range(1,n_comp+1),residue_max,'ro',range(1,n_comp+1),residue_max,'r')
- #   from mpl_toolkits.mplot3d import Axes3D
-  #  fig=plt.figure(2)
-  #  ax=Axes3D(fig)
-    plt.xlabel('iteration #')
-    plt.grid() 
-    print ('camera pose:'+str(crc.w_T_c))
-    plt.show()
-    
-            
+        plt.plot(range(1,n_comp+1),residue_mod,'bo',range(1,n_comp+1),residue_mod,'k')
+        plt.xlim([0,n_comp+1])
+        plt.plot(range(1,n_comp+1),residue_max,'ro',range(1,n_comp+1),residue_max,'r')
 
+        plt.xlabel('iteration #')
+        plt.grid() 
+        print ('camera pose:'+str(crc.w_T_c))
+        plt.show()

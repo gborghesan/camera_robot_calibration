@@ -33,6 +33,7 @@ class camera_robot_calibration_ros():
         self.camera_frame_name=rospy.get_param('camera_frame_name', '/camera_link')
         self.robot_ee_frame_name=rospy.get_param('robot_ee_frame_name', '/lwr_arm_link_7')
         self.target_frame_name=rospy.get_param('target_frame_name', '/marker_frame')
+        #self.save=rospy.get_param('auto_save_to_file', True)
         
         #nominal positions of camera w.r.t world and marker mounted in the robot
         #this two frames are published
@@ -58,13 +59,17 @@ class camera_robot_calibration_ros():
         #create services
         self.s1 = rospy.Service('read_tfs', Empty, self.read_tfs)
         self.s2 = rospy.Service('compute_frames', Empty, self.compute_frames)
+        self.s3 = rospy.Service('reset_frames', Empty, self.reset_frames)
         #save to file
         self.f= open('data.txt', 'w')
         #save initial positions
         safe_pose_to_file(self.f,self.w_P_c)
         safe_pose_to_file(self.f,self.ee_P_m)
         
-        
+    def reset_frames(self,req): 
+        """empty vectors to reset algorithm"""  
+        self.crc.reset_frames()
+        return EmptyResponse()
         
     def current_pose(self, frame_source, frame_target):
         if self.listener == None:
@@ -127,7 +132,7 @@ class camera_robot_calibration_ros():
         
     def read_tfs(self,req):
         #marker w.r.t. camera\print
-        print "enter"
+      
         ok=True
 
         #read target w.r.t. camera
@@ -141,16 +146,16 @@ class camera_robot_calibration_ros():
       
      
         if ok:
-            print "robot position"
+            print "stored robot position:"
             print w_P_ee
-            print "marker position"
+            print "stored marker position:"
             print c_P_m
             #save data
             safe_pose_to_file(self.f,w_P_ee)
             safe_pose_to_file(self.f,c_P_m)
             self.crc.store_frames(posemath.fromMsg( w_P_ee),posemath.fromMsg(c_P_m))
         else:
-            print "error"
+            print "error in retrieving a frame"
             
         return EmptyResponse();
 
