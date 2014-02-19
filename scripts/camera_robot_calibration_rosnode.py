@@ -39,13 +39,13 @@ class camera_robot_calibration_ros():
         #this two frames are published
         unity_frame=Pose()
         unity_frame.orientation.w=1; 
-        unity_frame.position.z=0.1; 
+        unity_frame.position.z=0.2; 
         # marker in ee
         self.ee_P_m=rospy.get_param('robot_ee_pose_camera', unity_frame);
         # camera base in world
         
-        init_camera_pose=PyKDL.Frame(PyKDL.Rotation.RPY(0,0,1.57*3/2+0.8),
-                PyKDL.Vector(-2,0,0.5))
+        init_camera_pose=PyKDL.Frame(PyKDL.Rotation.RPY(0,0,0.7),
+                PyKDL.Vector(-1,-1,1))
         
         self.w_P_c=rospy.get_param('nominal_pose_camera', posemath.toMsg(init_camera_pose));
         
@@ -71,15 +71,16 @@ class camera_robot_calibration_ros():
         self.crc.reset_frames()
         return EmptyResponse()
         
-    def current_pose(self, frame_source, frame_target):
+        
+    def current_pose(self, target_frame, origin_frame):
         if self.listener == None:
             rospy.loginfo("No transform listener available. Constructing new one.")
             self.listener = tf.TransformListener()
 
         try:
             now = rospy.Time(0)
-            self.listener.waitForTransform(frame_source, frame_target, now, rospy.Duration(0.3))
-            (trans, rot) = self.listener.lookupTransform(frame_source, frame_target, now)
+            self.listener.waitForTransform(target_frame, origin_frame, now, rospy.Duration(0.3))
+            (trans, rot) = self.listener.lookupTransform(origin_frame,target_frame, now)
 
             pose = Pose()
             pose.position.x = trans[0]
@@ -115,7 +116,7 @@ class camera_robot_calibration_ros():
                 residue= self.crc.compute_frames();
                 r2=residue.transpose()*residue
                 residue_mod.append( num.sqrt (r2[0,0]))
-                residue_max.append(num.max(residue))
+                residue_max.append(num.max(num.abs(residue)))
             print '\nresidue_mod'
             print residue_mod
             print '\nresidue_max'
@@ -136,7 +137,11 @@ class camera_robot_calibration_ros():
         ok=True
 
         #read target w.r.t. camera
-        c_P_m=self.current_pose(self.camera_frame_name,self.target_frame_name)
+       
+        w_P_ee=self.current_pose(self.robot_ee_frame_name,self.base_frame_name)
+        if(w_P_ee==0):
+            ok=False 
+        c_P_m=self.current_pose(self.target_frame_name,self.camera_frame_name)
         if(c_P_m==0):
             ok=False
         w_P_ee=self.current_pose(self.base_frame_name,self.robot_ee_frame_name)
@@ -146,9 +151,9 @@ class camera_robot_calibration_ros():
       
      
         if ok:
-            print "stored robot position:"
+            print self.base_frame_name+" -> "+self.robot_ee_frame_name
             print w_P_ee
-            print "stored marker position:"
+            print self.camera_frame_name + " -> " + self.target_frame_name
             print c_P_m
             #save data
             safe_pose_to_file(self.f,w_P_ee)
@@ -164,13 +169,13 @@ class camera_robot_calibration_ros():
         #publish the estimated poses of marker and camera, in tf
        
         self.br.sendTransform((self.w_P_c.position.x,self.w_P_c.position.y,self.w_P_c.position.z),  
-                         (self.w_P_c.orientation.w,self.w_P_c.orientation.x,self.w_P_c.orientation.y,self.w_P_c.orientation.z),
+                         (self.w_P_c.orientation.x,self.w_P_c.orientation.y,self.w_P_c.orientation.z,self.w_P_c.orientation.w),
                          rospy.Time.now(),
                          self.camera_frame_name,
                          self.base_frame_name)
         
         self.br.sendTransform((self.ee_P_m.position.x,self.ee_P_m.position.y,self.ee_P_m.position.z),  
-                         (self.ee_P_m.orientation.w,self.ee_P_m.orientation.x,self.ee_P_m.orientation.y,self.ee_P_m.orientation.z),
+                         (self.ee_P_m.orientation.x,self.ee_P_m.orientation.y,self.ee_P_m.orientation.z,self.ee_P_m.orientation.w),
                          rospy.Time.now(),
                          self.target_frame_name+"_nominal",
                          self.robot_ee_frame_name)
@@ -182,7 +187,8 @@ class camera_robot_calibration_ros():
             #
 
 if __name__ == '__main__':
-    print "init"
+    
+
     rospy.init_node('camera_robot_calibration')
     est=camera_robot_calibration_ros()
     
