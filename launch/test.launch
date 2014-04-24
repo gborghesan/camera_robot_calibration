@@ -1,4 +1,0 @@
-<launch>
-	<node name="camera_robot_calibration" pkg="camera_robot_calibration" type="camera_robot_calibration">
-	</node>
-</launch>
