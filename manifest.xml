@@ -1,10 +1,9 @@
 <package>
   <description brief="camera_robot_calibration">
 
-  This package include a single node that allows, by saving the pose 
+  This package includes a single node that allows, by saving the pose 
   of a robot e.e. (w.r.t. a base frame) and the the position (only x,y,z) of a marker/feature w.r.t.
-  
-  a camera frame, to estimate the camera frame (w.r.t. the same base frame)
+  a camera frame (marker fixed on the robot e.e.), to estimate the camera frame (w.r.t. the same base frame).
   Computation functionalities are available as python stand-alone code. 
 
   </description>
