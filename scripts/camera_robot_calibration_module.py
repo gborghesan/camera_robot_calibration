@@ -236,7 +236,7 @@ if __name__ == '__main__':
     
     if (random_poses):
         from random import random
-    
+        noise =0.01
         def random_pose(angle_range=num.pi/4, pos_range=0.5):
             return PyKDL.Frame(PyKDL.Rotation.RPY(angle_range*random(),angle_range*random(),angle_range*random()),
                                PyKDL.Vector(pos_range*random(),pos_range*random(),pos_range*random()))
@@ -258,7 +258,7 @@ if __name__ == '__main__':
             w_T_ee_vec.append(w_T_ee)
             #measure the frame of the marker w.r.t. the camera, plus some noise 
             #(noise on angle is not necessary as only marker position is used)
-            c_T_m_vec.append(w_TR_c.Inverse()*w_T_ee*ee_TR_m*random_pose(0,0.01))
+            c_T_m_vec.append(w_TR_c.Inverse()*w_T_ee*ee_TR_m*random_pose(0,noise))
     else:
         #measurements form file are used
         (w_T_c_in,ee_T_m_in,w_T_ee_vec,c_T_m_vec)=load_pose_from_file(inputfile)
@@ -270,22 +270,19 @@ if __name__ == '__main__':
     
     residue_max=[]
     residue_average=[]
-    residue_std_up=[]
-    residue_std_dw=[]
-    #residue_all=None
-    #x_bar=None
-    #y_bar=None
-    n_comp=10
+
+    n_comp=4
     for i in range(n_comp):
         print crc.w_T_c.p
         residue=crc.compute_frames();
         residue_average.append( num.average(num.abs(residue)))
         residue_max.append(num.max(num.abs(residue)))
-        residue_std_up.append(num.max(num.std(residue))+num.max(num.abs(residue)))
-        residue_std_dw.append(num.max(num.std(residue))-num.max(num.abs(residue)))
+
   
             
     if random_poses:
+        print 'noise measurement ([x,y,z] marker position, in meters)'
+        print noise
         print 'error camera pose: computed vs Ground Truth'
         print (w_TR_c.Inverse()*crc.w_T_c)
         print 'error marker position: computed vs Ground Truth'
@@ -298,12 +295,10 @@ if __name__ == '__main__':
         ax.plot(range(1,n_comp+1),residue_average,'bo:', label="average residue")
         plt.xlim([0.8,n_comp+.2])
         ax.plot(range(1,n_comp+1),residue_max,'ro:', label="max residue") 
-        #ax.plot(range(1,n_comp+1),residue_std_up,'y:', label="standard dev.")     
+        #ax.set_yscale('log')   
         handles, labels = ax.get_legend_handles_labels()
         plt.legend(handles, labels)   
-        #ax.plot(range(1,n_comp+1),residue_std_dw,'y:')  
-  
-        #plt.legend([p1,p2],["average residue","max residue"])
+
         plt.xlabel('iteration #')
         plt.ylabel('residue (meters)')
         plt.grid() 
