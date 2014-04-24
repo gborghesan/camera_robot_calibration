@@ -298,8 +298,8 @@ if __name__ == '__main__':
 
         plt.xlabel('iteration #')
         plt.grid() 
-        print ('camera pose:'+str(crc.w_T_c))
+        print ('camera pose\n:'+str(crc.w_T_c))
         [R, P, Y] = crc.w_T_c.M.GetRPY()
-        print ('\nYaw:\t'+str(Y)+'\nPitch:\t'+str(P)+'Roll:\t'+str(R))
+        print ('Yaw:\t'+str(Y)+'\nPitch:\t'+str(P)+'\nRoll:\t'+str(R))
         plt.show()
         
