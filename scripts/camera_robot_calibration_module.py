@@ -269,7 +269,9 @@ if __name__ == '__main__':
         crc.store_frames(w_T_ee_vec[i],c_T_m_vec[i])
     
     residue_max=[]
-    residue_mod=[]
+    residue_average=[]
+    residue_std_up=[]
+    residue_std_dw=[]
     #residue_all=None
     #x_bar=None
     #y_bar=None
@@ -277,28 +279,35 @@ if __name__ == '__main__':
     for i in range(n_comp):
         print crc.w_T_c.p
         residue=crc.compute_frames();
-        r2=residue.transpose()*residue
-        residue_mod.append( num.sqrt (r2[0,0]))
-        residue_max.append(num.max(residue))
+        residue_average.append( num.average(num.abs(residue)))
+        residue_max.append(num.max(num.abs(residue)))
+        residue_std_up.append(num.max(num.std(residue))+num.max(num.abs(residue)))
+        residue_std_dw.append(num.max(num.std(residue))-num.max(num.abs(residue)))
   
             
     if random_poses:
-        print 'error w_T_c'
+        print 'error camera pose: computed vs Ground Truth'
         print (w_TR_c.Inverse()*crc.w_T_c)
-        print 'error ee_T_m.p'
+        print 'error marker position: computed vs Ground Truth'
         print (ee_TR_m.p-crc.ee_T_m.p)    
     print 'residue, maxes for iterations'
     print residue_max
     if plot_grap==True:
         import matplotlib.pyplot as plt
-    
-        plt.plot(range(1,n_comp+1),residue_mod,'bo',range(1,n_comp+1),residue_mod,'k')
-        plt.xlim([0,n_comp+1])
-        plt.plot(range(1,n_comp+1),residue_max,'ro',range(1,n_comp+1),residue_max,'r')
-
+        ax = plt.subplot(1,1,1)
+        ax.plot(range(1,n_comp+1),residue_average,'bo:', label="average residue")
+        plt.xlim([0.8,n_comp+.2])
+        ax.plot(range(1,n_comp+1),residue_max,'ro:', label="max residue") 
+        #ax.plot(range(1,n_comp+1),residue_std_up,'y:', label="standard dev.")     
+        handles, labels = ax.get_legend_handles_labels()
+        plt.legend(handles, labels)   
+        #ax.plot(range(1,n_comp+1),residue_std_dw,'y:')  
+  
+        #plt.legend([p1,p2],["average residue","max residue"])
         plt.xlabel('iteration #')
+        plt.ylabel('residue (meters)')
         plt.grid() 
-        print ('camera pose\n:'+str(crc.w_T_c))
+        print ('camera pose:\n'+str(crc.w_T_c))
         [R, P, Y] = crc.w_T_c.M.GetRPY()
         print ('Yaw:\t'+str(Y)+'\nPitch:\t'+str(P)+'\nRoll:\t'+str(R))
         plt.show()
