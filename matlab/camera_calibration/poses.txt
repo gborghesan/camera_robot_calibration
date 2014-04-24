@@ -1,4 +1,0 @@
-ee_P_mn=Pose();ee_P_mn.position.x=0;ee_P_mn.position.y=0;ee_P_mn.position.z=0.1;ee_P_mn.orientation.w=1;ee_P_mn.orientation.x=0;ee_P_mn.orientation.y=0;ee_P_mn.orientation.z=0
-w_P_cn=Pose();w_P_cn.position.x=0;w_P_cn.position.y=2;w_P_cn.position.z=0.5;w_P_cn.orientation.w=0;w_P_cn.orientation.x=0;w_P_cn.orientation.y=0;w_P_cn.orientation.z=1
-w_P_ee=Pose();w_P_ee.position.x=-0.4619;w_P_ee.position.y=0.49537;w_P_ee.position.z=-0.27491;w_P_ee.orientation.w=0.93107;w_P_ee.orientation.x=0.2656;w_P_ee.orientation.y=-0.031626;w_P_ee.orientation.z=0.24814
-cr_P_mr=Pose();cr_P_mr.position.x=0.64691;cr_P_mr.position.y=1.2265;cr_P_mr.position.z=-1.2165;cr_P_mr.orientation.w=0.060835;cr_P_mr.orientation.x=-0.42454;cr_P_mr.orientation.y=-0.49509;cr_P_mr.orientation.z=-0.75561
