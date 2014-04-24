@@ -25,13 +25,13 @@ camera_robot_calibration_module [-h/--help][-i/--inputfile file_of_input][-p/--p
 -p: plot the graph of max and average residuals (defaults to True)
 ```
 
-Usage of rosnode
-----------------
+## Usage of rosnode
+
 A video showing the usage of the node is available here:
 http://youtu.be/ihWAxj-8IWM
 
-parameters
-----------
+#####  parameters
+
 - _base_frame_name_ : name of the common frame
 - _camera_frame_name_ : Name of frame in which is represented the marker
  	(attached to the 3d measurement system), e.g. _/camera_link_
@@ -46,14 +46,14 @@ e.e. and the marker (defaults to identity, only the position matters, as orienta
 
 All these frame are expected to be published as tf
 
-Operations
-----------
+##### Operations
+
 - _read_tfs_ : store internally the measurement (the marker w.r.t. camera and e.e. w.r.t. base).
 - _reset_frames_ : cancel all measurements
 - _compute_frames_ compute the camera pose. can be called more than once.
 
-Tf transforms
-------------
+##### Tf transforms
+
 listens to 
 - _base_frame_name_ -> _robot_ee_frame_name_
 - _camera_frame_name_ -> _target_frame_name_
