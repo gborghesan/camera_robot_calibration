@@ -61,7 +61,7 @@ class camera_robot_calibration_ros():
         self.base_frame_name=rospy.get_param('base_frame_name', '/base_link')
         self.camera_frame_name=rospy.get_param('camera_frame_name', '/camera_link')
         self.robot_ee_frame_name=rospy.get_param('robot_ee_frame_name', '/lwr_arm_link_7')
-        self.target_frame_name=rospy.get_param('target_frame_name', '/marker_frame')
+        self.marker_frame_name=rospy.get_param('marker_frame_name', '/marker_frame')
         #self.save=rospy.get_param('auto_save_to_file', True)
         
         #nominal positions of camera w.r.t world and marker mounted in the robot
@@ -72,9 +72,12 @@ class camera_robot_calibration_ros():
         # marker in ee
         self.ee_P_m=rospy.get_param('robot_ee_marker', unity_frame);
         # camera base in world
-        
-        init_camera_pose=PyKDL.Frame(PyKDL.Rotation.RPY(0,0,0.7),
-                PyKDL.Vector(-1,-1,1))
+        R=PyKDL.Rotation(PyKDL.Vector( -0.220699,     0.66163,   -0.716615),
+                         PyKDL.Vector(0.13597,    0.748429,    0.649128),
+                         PyKDL.Vector(0.965818,   0.0458236,   -0.255139))
+        #PyKDL.Rotation.RPY(0,0,0.7)
+        init_camera_pose=PyKDL.Frame((R),
+                                     PyKDL.Vector(  0.126191,  0.00936311,    -1.21054))
         
         self.w_P_c=rospy.get_param('nominal_pose_camera', posemath.toMsg(init_camera_pose));
         
@@ -109,6 +112,7 @@ class camera_robot_calibration_ros():
         try:
             now = rospy.Time(0)
             self.listener.waitForTransform(target_frame, origin_frame, now, rospy.Duration(0.3))
+            
             (trans, rot) = self.listener.lookupTransform(origin_frame,target_frame, now)
 
             pose = Pose()
@@ -170,24 +174,24 @@ class camera_robot_calibration_ros():
         w_P_ee=self.current_pose(self.robot_ee_frame_name,self.base_frame_name)
         if(w_P_ee==0):
             ok=False 
-        c_P_m=self.current_pose(self.target_frame_name,self.camera_frame_name)
+        c_P_m=self.current_pose(self.marker_frame_name,self.camera_frame_name)
         if(c_P_m==0):
             ok=False
-        w_P_ee=self.current_pose(self.base_frame_name,self.robot_ee_frame_name)
-        if(w_P_ee==0):
-            ok=False
+        
         #ee w.r.t. base
       
      
         if ok:
             print self.base_frame_name+" -> "+self.robot_ee_frame_name
             print w_P_ee
-            print self.camera_frame_name + " -> " + self.target_frame_name
+            print self.camera_frame_name + " -> " + self.marker_frame_name
             print c_P_m
             #save data
             safe_pose_to_file(self.f,w_P_ee)
             safe_pose_to_file(self.f,c_P_m)
             self.crc.store_frames(posemath.fromMsg( w_P_ee),posemath.fromMsg(c_P_m))
+            print "saved so far"
+            print len(self.crc._w_T_ee)
         else:
             print "error in retrieving a frame"
             
@@ -206,7 +210,7 @@ class camera_robot_calibration_ros():
         self.br.sendTransform((self.ee_P_m.position.x,self.ee_P_m.position.y,self.ee_P_m.position.z),  
                          (self.ee_P_m.orientation.x,self.ee_P_m.orientation.y,self.ee_P_m.orientation.z,self.ee_P_m.orientation.w),
                          rospy.Time.now(),
-                         self.target_frame_name+"_nominal",
+                         self.marker_frame_name+"_nominal",
                          self.robot_ee_frame_name)
     
         

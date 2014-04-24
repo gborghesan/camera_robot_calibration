@@ -8,7 +8,7 @@
   Computation functionalities are available as python stand-alone code. 
 
   </description>
-  <author>Gianni Borghesan</author>
+  <author>Gianni Borghesan, gianni.borghesan@mech.kuleuven.be</author>
   <license>BSD</license>
   <review status="beta" notes="tested on groovy"/>
   <url>http://ros.org/wiki/camera_robot_calibration</url>

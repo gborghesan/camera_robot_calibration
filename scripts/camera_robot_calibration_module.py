@@ -27,6 +27,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 POSSIBILITY OF SUCH DAMAGE. 
 """
+
 import numpy as num
 from geometry_msgs.msg import Pose, Point, Quaternion
 from tf_conversions import posemath
@@ -189,7 +190,7 @@ class camera_robot_calibration():
 
 if __name__ == '__main__':
     def usage():
-        print "Usage: \ncamera_robot_calibration_module [-h/--help][-i/ --inputfile file_of_input][-p/--plotgraph True/False]"
+        print "Usage: \n\tcamera_robot_calibration_module [-h][-i file_of_input][-p True/False]"
     import sys, getopt
 
     try:
@@ -211,6 +212,7 @@ if __name__ == '__main__':
             usage()
             sys.exit()
         elif o in ("-p", "--plotgraph"):
+            print a
             if a=='True': 
                 plot_grap=True
             elif a=='False': 
@@ -297,4 +299,7 @@ if __name__ == '__main__':
         plt.xlabel('iteration #')
         plt.grid() 
         print ('camera pose:'+str(crc.w_T_c))
+        [R, P, Y] = crc.w_T_c.M.GetRPY()
+        print ('\nYaw:\t'+str(Y)+'\nPitch:\t'+str(P)+'Roll:\t'+str(R))
         plt.show()
+        
