@@ -70,7 +70,7 @@ class camera_robot_calibration_ros():
         unity_frame.orientation.w=1; 
         unity_frame.position.z=0.2; 
         # marker in ee
-        self.ee_P_m=rospy.get_param('robot_ee_pose_camera', unity_frame);
+        self.ee_P_m=rospy.get_param('robot_ee_marker', unity_frame);
         # camera base in world
         
         init_camera_pose=PyKDL.Frame(PyKDL.Rotation.RPY(0,0,0.7),

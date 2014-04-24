@@ -189,7 +189,7 @@ class camera_robot_calibration():
 
 if __name__ == '__main__':
     def usage():
-        print "Usage: \n\tcamera_robot_calibration_module [-h][-i file_of_input][-p True/False]"
+        print "Usage: \ncamera_robot_calibration_module [-h/--help][-i/ --inputfile file_of_input][-p/--plotgraph True/False]"
     import sys, getopt
 
     try:
