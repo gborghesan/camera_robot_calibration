@@ -211,7 +211,6 @@ if __name__ == '__main__':
             usage()
             sys.exit()
         elif o in ("-p", "--plotgraph"):
-            print a
             if a=='True': 
                 plot_grap=True
             elif a=='False': 
