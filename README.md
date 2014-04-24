@@ -14,20 +14,24 @@ The package contains two python files:
 
 The python module is self standing and can be tested either with saves data 
 (the data.txt brings an example) or with randomly generated data.
-usage
+
+##### Usage of the test
 ```
-camera_robot_calibration_module [-h/--help][-i/--inputfile file_of_input][-p/--plotgraph True/False]
+./camera_robot_calibration_module [-h/--help][-i/--inputfile file_of_input][-p/--plotgraph True/False]
 ```
+
+Options:
 
 ```
 -h: shows help
--i: name file containing the data (in not provided, random poses for robot and camera-marker will be generated, with noise)
+-i: name file containing the data (if not provided, 
+    random poses for robot and camera-marker will be generated, with noise)
 -p: plot the graph of max and average residuals (defaults to True)
 ```
 
-## Usage of rosnode
+## Rosnode description
 
-A video showing the usage of the node is available here:
+A video showing the employment of the node (calibration of a kuka and a asus xion using ar_kinect marker tracking) is available here:
 http://youtu.be/ihWAxj-8IWM
 
 #####  parameters
