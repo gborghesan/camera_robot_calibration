@@ -28,8 +28,6 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE. 
 """
 
-import roslib
-roslib.load_manifest('camera_robot_calibration')
 import rospy
 import tf
 import PyKDL
@@ -38,11 +36,9 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Pose, Point, Quaternion
 from tf_conversions import posemath
 
-
-
 from std_srvs.srv import Empty, EmptyResponse
 
-from camera_robot_calibration_module import camera_robot_calibration
+from camera_robot_calib.camera_robot_calibration_module import camera_robot_calibration
 
 def safe_pose_to_file(f,P):
     f.write(str(P.position.x)+'\t')

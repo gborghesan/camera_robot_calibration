@@ -1,0 +1,24 @@
+<package>
+  <name>camera_robot_calibration</name>
+  <version>0.0.0</version>
+  <description>
+
+    This package includes a single node that allows, by saving the pose 
+    of a robot e.e. (w.r.t. a base frame) and the the position (only x,y,z) of a marker/feature w.r.t.
+    a camera frame (marker fixed on the robot e.e.), to estimate the camera frame (w.r.t. the same base frame).
+    Computation functionalities are available as python stand-alone code. 
+
+  </description>
+  <license>BSD</license>
+  <url type="website">http://ros.org/wiki/camera_robot_calibration</url>
+  <author email="gianni.borghesan@mech.kuleuven.be">Gianni Borghesan</author>
+  <maintainer email="gianni.borghesan@mech.kuleuven.be">Gianni Borghesan</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>tf_conversions</run_depend>
+
+</package>
