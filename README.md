@@ -48,13 +48,13 @@ http://youtu.be/ihWAxj-8IWM
 - _robot_ee_marker_ : initial guess of the position between robot 
 e.e. and the marker (defaults to identity, only the position matters, as orientation is never used)
 
-All these frame are expected to be published as tf
+All these frame are expected to be published as tf.
 
 ##### Operations
 
 - _read_tfs_ : store internally the measurement (the marker w.r.t. camera and e.e. w.r.t. base).
 - _reset_frames_ : cancel all measurements
-- _compute_frames_ compute the camera pose. can be called more than once.
+- _compute_frames_ : compute the camera pose. can be called more than once.
 
 ##### Tf transforms
 
